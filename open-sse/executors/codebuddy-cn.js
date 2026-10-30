@@ -1,4 +1,5 @@
 import { DefaultExecutor } from "./default.js";
+import { normalizeScalarToolChoice } from "../utils/toolChoiceCompat.js";
 
 /**
  * CodeBuddyExecutor — talks to https://copilot.tencent.com/v2/chat/completions
@@ -17,6 +18,10 @@ export class CodeBuddyExecutor extends DefaultExecutor {
   transformRequest(model, body, stream, credentials) {
     const transformed = super.transformRequest(model, body, stream, credentials);
     transformed.stream = true;
+
+    // The gateway decodes tool_choice into a Go string field, so the OpenAI
+    // object form is rejected with 400 / code 11101 before it reaches the model.
+    normalizeScalarToolChoice(transformed);
 
     // Tencent's content filter flags CLI agent system prompts ("You are Claude
     // Code, Anthropic's official CLI...") as prompt injection / sensitive content

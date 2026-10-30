@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { DefaultExecutor } from "./default.js";
+import { normalizeScalarToolChoice } from "../utils/toolChoiceCompat.js";
 
 /**
  * RFC 9562 UUIDv7: 48-bit millisecond timestamp first, then random bits.
@@ -81,6 +82,10 @@ export class CodeBuddyIntlExecutor extends DefaultExecutor {
   transformRequest(model, body, stream, credentials) {
     const transformed = super.transformRequest(model, body, stream, credentials);
     transformed.stream = true;
+
+    // The gateway decodes tool_choice into a Go string field, so the OpenAI
+    // object form is rejected with 400 / code 11101 before it reaches the model.
+    normalizeScalarToolChoice(transformed);
 
     const eff = transformed.reasoning_effort;
     if (eff === "none" || eff === "off") {
